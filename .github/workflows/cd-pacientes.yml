@@ -1,0 +1,55 @@
+name: Hospital CD Pacientes
+on:
+  workflow_run:
+    workflows: [Hospital CI]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: hospital-demo-pacientes
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: [self-hosted, Linux, X64, hospital-demo]
+    environment: hospital-demo
+    env:
+      IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+      DEMO_GATEWAY_URL: ${{ vars.DEMO_GATEWAY_URL }}
+      DEMO_PATIENT_ID: ${{ vars.DEMO_PATIENT_ID }}
+    steps:
+      - name: Evitar desplegar un commit anterior al actual main
+        id: current
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.getBranch({
+              owner: context.repo.owner, repo: context.repo.repo, branch: 'main'
+            });
+            const current = data.commit.sha === context.payload.workflow_run.head_sha;
+            core.setOutput('current', String(current));
+            if (!current) core.info('Se omite este despliegue porque main ya tiene otro commit.');
+      - name: Descargar exactamente el commit aprobado
+        if: steps.current.outputs.current == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Descargar imagen de esa ejecucion CI
+        if: steps.current.outputs.current == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: pacientes-image
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: approved-image
+      - name: Actualizar pacientes y verificar endpoint
+        if: steps.current.outputs.current == 'true'
+        shell: bash
+        run: bash deploy/deploy-pacientes.sh

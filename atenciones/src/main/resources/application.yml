@@ -1,0 +1,31 @@
+server:
+  port: ${SERVER_PORT:8083}
+spring:
+  application:
+    name: atenciones
+  r2dbc:
+    url: ${DB_URL:r2dbc:postgresql://localhost:5432/atenciones}
+    username: ${DB_USER:atenciones}
+    password: ${DB_PASSWORD}
+  sql:
+    init:
+      mode: always
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+eureka:
+  client:
+    registry-fetch-interval-seconds: 5
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15

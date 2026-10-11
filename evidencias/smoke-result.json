@@ -1,0 +1,202 @@
+{
+  "fechaUtc": "2026-10-11T18:27:14.068173+00:00",
+  "estado": "OK",
+  "checks": [
+    {
+      "caso": "Registrar paciente",
+      "estado": "OK",
+      "http": 201
+    },
+    {
+      "caso": "Consultar paciente",
+      "estado": "OK",
+      "http": 200
+    },
+    {
+      "caso": "Rechazar documento duplicado",
+      "estado": "OK",
+      "http": 409
+    },
+    {
+      "caso": "Rechazar campos ausentes",
+      "estado": "OK",
+      "http": 400
+    },
+    {
+      "caso": "Paciente inexistente",
+      "estado": "OK",
+      "http": 404
+    },
+    {
+      "caso": "Programar cita",
+      "estado": "OK",
+      "http": 201
+    },
+    {
+      "caso": "Consultar cita",
+      "estado": "OK",
+      "http": 200
+    },
+    {
+      "caso": "Rechazar agenda ocupada",
+      "estado": "OK",
+      "http": 409
+    },
+    {
+      "caso": "Rechazar agenda fuera de bloque",
+      "estado": "OK",
+      "http": 400
+    },
+    {
+      "caso": "Rechazar cita para paciente inexistente",
+      "estado": "OK",
+      "http": 404
+    },
+    {
+      "caso": "Rechazar atencion sin confirmar",
+      "estado": "OK",
+      "http": 409
+    },
+    {
+      "caso": "Confirmar cita",
+      "estado": "OK",
+      "http": 200
+    },
+    {
+      "caso": "Rechazar cierre sin referencia de atencion",
+      "estado": "OK",
+      "http": 400
+    },
+    {
+      "caso": "Evento consumido y persistido en notificaciones",
+      "estado": "OK"
+    },
+    {
+      "caso": "Evento consumido y persistido en auditoria",
+      "estado": "OK"
+    },
+    {
+      "caso": "Registrar atencion",
+      "estado": "OK",
+      "http": 201
+    },
+    {
+      "caso": "Consultar atencion",
+      "estado": "OK",
+      "http": 200
+    },
+    {
+      "caso": "Atencion idempotente",
+      "estado": "OK",
+      "http": 201
+    },
+    {
+      "caso": "Cita queda atendida",
+      "estado": "OK",
+      "http": 200
+    },
+    {
+      "caso": "Estado final no reabre",
+      "estado": "OK",
+      "http": 409
+    },
+    {
+      "caso": "Atendida no se reprograma",
+      "estado": "OK",
+      "http": 409
+    },
+    {
+      "caso": "Segunda cita futura",
+      "estado": "OK",
+      "http": 201
+    },
+    {
+      "caso": "Reprogramar cita",
+      "estado": "OK",
+      "http": 200
+    },
+    {
+      "caso": "Cancelar cita",
+      "estado": "OK",
+      "http": 200
+    },
+    {
+      "caso": "Cancelada no se confirma",
+      "estado": "OK",
+      "http": 409
+    },
+    {
+      "caso": "Agenda cancelada se libera",
+      "estado": "OK",
+      "http": 201
+    },
+    {
+      "caso": "Paciente inactivo",
+      "estado": "OK",
+      "http": 201
+    },
+    {
+      "caso": "Paciente inactivo no agenda",
+      "estado": "OK",
+      "http": 409
+    },
+    {
+      "caso": "Pago cero rechazado",
+      "estado": "OK",
+      "http": 400
+    },
+    {
+      "caso": "Pago negativo rechazado",
+      "estado": "OK",
+      "http": 400
+    },
+    {
+      "caso": "Pago simulado valido",
+      "estado": "OK",
+      "http": 201
+    },
+    {
+      "caso": "Consulta de pago",
+      "estado": "OK",
+      "http": 200
+    },
+    {
+      "caso": "Operacion de pago duplicada",
+      "estado": "OK",
+      "http": 409
+    },
+    {
+      "caso": "Persistencia PostgreSQL real",
+      "estado": "OK"
+    },
+    {
+      "caso": "Republicacion real sin duplicados",
+      "estado": "OK"
+    },
+    {
+      "caso": "Cita para recuperacion del broker",
+      "estado": "OK",
+      "http": 201
+    },
+    {
+      "caso": "Confirmacion con broker temporalmente caido",
+      "estado": "OK",
+      "http": 200
+    },
+    {
+      "caso": "Outbox recupera evento tras caida RabbitMQ",
+      "estado": "OK"
+    },
+    {
+      "caso": "Dependencia caida devuelve error controlado",
+      "estado": "OK",
+      "http": 504
+    }
+  ],
+  "recursosFicticios": {
+    "pacienteId": "ce16af20-3215-41d3-be14-0426e8f4d0ca",
+    "citaId": "f5b6715c-3225-49eb-a9f2-e1e0de33cdbf",
+    "atencionId": "4503eae5-2f55-47af-93fb-781378f1a809",
+    "pagoId": "1941ed29-ec7a-4196-8023-37a42ee8b5b7"
+  }
+}

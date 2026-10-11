@@ -1,0 +1,648 @@
+{
+  "info": {
+    "name": "Hospital Vida Salud T2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "pacienteId",
+      "value": ""
+    },
+    {
+      "key": "citaId",
+      "value": ""
+    },
+    {
+      "key": "fechaCita",
+      "value": ""
+    },
+    {
+      "key": "demoDocument",
+      "value": ""
+    },
+    {
+      "key": "demoProfesional",
+      "value": ""
+    },
+    {
+      "key": "demoOperacion",
+      "value": ""
+    },
+    {
+      "key": "fechaCitaAlterna",
+      "value": ""
+    },
+    {
+      "key": "fechaReprogramacion",
+      "value": ""
+    },
+    {
+      "key": "citaReprogramacionId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Registrar paciente",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/pacientes",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tipoDocumento\": \"OTRO\",\n  \"numeroDocumento\": \"{{demoDocument}}\",\n  \"nombres\": \"Paciente\",\n  \"apellidos\": \"Demostracion\",\n  \"fechaNacimiento\": \"1990-01-01\",\n  \"telefono\": \"000000000\",\n  \"correo\": \"demo@example.test\",\n  \"direccion\": \"Direccion ficticia\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"pacienteId\", pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Consultar paciente",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/pacientes/{{pacienteId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Rechazar duplicado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/pacientes",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tipoDocumento\": \"OTRO\",\n  \"numeroDocumento\": \"{{demoDocument}}\",\n  \"nombres\": \"Paciente\",\n  \"apellidos\": \"Demostracion\",\n  \"fechaNacimiento\": \"1990-01-01\",\n  \"telefono\": \"000000000\",\n  \"correo\": \"demo@example.test\",\n  \"direccion\": \"Direccion ficticia\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Listar pacientes",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/pacientes"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Programar cita",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/citas",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pacienteId\": \"{{pacienteId}}\",\n  \"especialidad\": \"DEMO\",\n  \"fechaHora\": \"{{fechaCita}}\",\n  \"profesionalCodigo\": \"{{demoProfesional}}\",\n  \"motivo\": \"Tramite administrativo ficticio\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"citaId\", pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Consultar cita",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/citas/{{citaId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Rechazar agenda ocupada",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/citas",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pacienteId\": \"{{pacienteId}}\",\n  \"especialidad\": \"DEMO\",\n  \"fechaHora\": \"{{fechaCita}}\",\n  \"profesionalCodigo\": \"{{demoProfesional}}\",\n  \"motivo\": \"Tramite administrativo ficticio\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Confirmar cita",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/citas/{{citaId}}/estado",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"CONFIRMADA\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Consultar notificaciones",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/notificaciones?citaId={{citaId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Consultar auditoria",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auditoria?recursoId={{citaId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Registrar atencion",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/atenciones",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"citaId\": \"{{citaId}}\",\n  \"area\": \"ADMISION DEMO\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"atencionId\", pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Consultar atencion",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/atenciones/{{atencionId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Rechazar confirmacion de atendida",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/citas/{{citaId}}/estado",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"CONFIRMADA\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Registrar pago simulado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/pagos",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pacienteId\": \"{{pacienteId}}\",\n  \"concepto\": \"Pago administrativo ficticio\",\n  \"monto\": 50.0,\n  \"medio\": \"EFECTIVO\",\n  \"numeroOperacion\": \"{{demoOperacion}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"pagoId\", pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 Consultar pago",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/pagos/{{pagoId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 Rechazar operacion duplicada",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/pagos",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pacienteId\": \"{{pacienteId}}\",\n  \"concepto\": \"Pago administrativo ficticio\",\n  \"monto\": 50.0,\n  \"medio\": \"EFECTIVO\",\n  \"numeroOperacion\": \"{{demoOperacion}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 Rechazar monto cero",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/pagos",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pacienteId\": \"{{pacienteId}}\",\n  \"concepto\": \"Pago administrativo ficticio\",\n  \"monto\": 0,\n  \"medio\": \"EFECTIVO\",\n  \"numeroOperacion\": \"{{demoOperacion}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 Rechazar monto negativo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/pagos",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pacienteId\": \"{{pacienteId}}\",\n  \"concepto\": \"Pago administrativo ficticio\",\n  \"monto\": -1,\n  \"medio\": \"EFECTIVO\",\n  \"numeroOperacion\": \"{{demoOperacion}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 Paciente inexistente",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/pacientes/00000000-0000-0000-0000-000000000001"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 Nueva cita para reprogramar",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/citas",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pacienteId\": \"{{pacienteId}}\",\n  \"especialidad\": \"DEMO\",\n  \"fechaHora\": \"{{fechaCitaAlterna}}\",\n  \"profesionalCodigo\": \"{{demoProfesional}}\",\n  \"motivo\": \"Tramite administrativo ficticio\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"citaReprogramacionId\", pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 Reprogramar cita",
+      "request": {
+        "method": "PATCH",
+        "url": "{{baseUrl}}/api/citas/{{citaReprogramacionId}}/agenda",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fechaHora\": \"{{fechaReprogramacion}}\",\n  \"profesionalCodigo\": \"{{demoProfesional}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 Cancelar cita",
+      "request": {
+        "method": "PATCH",
+        "url": "{{baseUrl}}/api/citas/{{citaReprogramacionId}}/estado",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"CANCELADA\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 Cancelada no se confirma",
+      "request": {
+        "method": "PATCH",
+        "url": "{{baseUrl}}/api/citas/{{citaReprogramacionId}}/estado",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"CONFIRMADA\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (pm.info.requestName.startsWith(\"01 \")) {",
+          "  const suffix = Date.now().toString();",
+          "  pm.collectionVariables.set(\"demoDocument\", \"DEMO-\"+suffix);",
+          "  pm.collectionVariables.set(\"demoProfesional\", \"DEMO-\"+suffix);",
+          "  pm.collectionVariables.set(\"demoOperacion\", \"DEMO-\"+suffix);",
+          "  const date = new Date(Date.now()+3*24*60*60*1000);",
+          "  date.setUTCMinutes(30,0,0);",
+          "  pm.collectionVariables.set(\"fechaCita\", date.toISOString());",
+          "  pm.collectionVariables.set(\"fechaCitaAlterna\", new Date(date.getTime()+24*60*60*1000).toISOString());",
+          "  pm.collectionVariables.set(\"fechaReprogramacion\", new Date(date.getTime()+2*24*60*60*1000).toISOString());",
+          "}"
+        ]
+      }
+    }
+  ]
+}

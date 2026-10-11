@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS evento(event_id UUID PRIMARY KEY,event_type VARCHAR(60) NOT NULL,version INTEGER NOT NULL,occurred_at TIMESTAMP WITH TIME ZONE NOT NULL,cita_id UUID NOT NULL,paciente_id UUID NOT NULL,estado_anterior VARCHAR(15),estado_nuevo VARCHAR(15) NOT NULL,origen VARCHAR(50) NOT NULL,received_at TIMESTAMP WITH TIME ZONE NOT NULL);
+CREATE INDEX IF NOT EXISTS evento_cita ON evento(cita_id);

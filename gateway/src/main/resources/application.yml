@@ -1,0 +1,51 @@
+server:
+  port: ${SERVER_PORT:8080}
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: pacientes
+              uri: lb://pacientes
+              predicates:
+                - Path=/api/pacientes/**,/api/pacientes
+            - id: citas
+              uri: lb://citas
+              predicates:
+                - Path=/api/citas/**,/api/citas
+            - id: atenciones
+              uri: lb://atenciones
+              predicates:
+                - Path=/api/atenciones/**,/api/atenciones
+            - id: pagos
+              uri: lb://pagos
+              predicates:
+                - Path=/api/pagos/**,/api/pagos
+            - id: notificaciones
+              uri: lb://notificaciones
+              predicates:
+                - Path=/api/notificaciones/**,/api/notificaciones
+            - id: auditoria
+              uri: lb://auditoria
+              predicates:
+                - Path=/api/auditoria/**,/api/auditoria
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+eureka:
+  client:
+    registry-fetch-interval-seconds: 5
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15

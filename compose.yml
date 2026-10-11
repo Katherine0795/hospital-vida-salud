@@ -1,0 +1,205 @@
+name: hospital-demo
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Falta POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD}
+      PACIENTES_DB_PASSWORD: ${PACIENTES_DB_PASSWORD:?Falta password de pacientes}
+      CITAS_DB_PASSWORD: ${CITAS_DB_PASSWORD:?Falta password de citas}
+      ATENCIONES_DB_PASSWORD: ${ATENCIONES_DB_PASSWORD:?Falta password de atenciones}
+      PAGOS_DB_PASSWORD: ${PAGOS_DB_PASSWORD:?Falta password de pagos}
+      NOTIFICACIONES_DB_PASSWORD: ${NOTIFICACIONES_DB_PASSWORD:?Falta password de notificaciones}
+      AUDITORIA_DB_PASSWORD: ${AUDITORIA_DB_PASSWORD:?Falta password de auditoria}
+    volumes:
+      - sql_data:/var/lib/postgresql/data
+      - ./infra/init-databases.sh:/docker-entrypoint-initdb.d/01-databases.sh:ro
+    ports: ["127.0.0.1:5433:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [hospital]
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBIT_USER:?Falta RABBIT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD:?Falta RABBIT_PASSWORD}
+    volumes: ["rabbit_data:/var/lib/rabbitmq"]
+    ports: ["127.0.0.1:5672:5672", "127.0.0.1:15672:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [hospital]
+  discovery:
+    image: hospital-discovery:${IMAGE_TAG:-demo}
+    build:
+      context: .
+      args:
+        MODULE: discovery
+    environment:
+      SERVER_PORT: '8761'
+      JAVA_TOOL_OPTIONS: -Xms64m -Xmx192m
+    ports: ["127.0.0.1:8761:8761"]
+    restart: unless-stopped
+    networks: [hospital]
+  gateway:
+    image: hospital-gateway:${IMAGE_TAG:-demo}
+    build:
+      context: .
+      args:
+        MODULE: gateway
+    environment:
+      SERVER_PORT: '8080'
+      JAVA_TOOL_OPTIONS: -Xms64m -Xmx192m
+      EUREKA_URL: http://discovery:8761/eureka/
+    depends_on:
+      discovery:
+        condition: service_started
+    ports: ["127.0.0.1:8080:8080"]
+    restart: unless-stopped
+    networks: [hospital]
+  pacientes:
+    image: hospital-pacientes:${IMAGE_TAG:-demo}
+    build:
+      context: .
+      args:
+        MODULE: pacientes
+    environment:
+      SERVER_PORT: '8081'
+      JAVA_TOOL_OPTIONS: -Xms64m -Xmx192m
+      EUREKA_URL: http://discovery:8761/eureka/
+      DB_URL: r2dbc:postgresql://postgres:5432/pacientes
+      DB_USER: pacientes
+      DB_PASSWORD: ${PACIENTES_DB_PASSWORD:?Falta password de pacientes}
+    depends_on:
+      discovery:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [hospital]
+  citas:
+    image: hospital-citas:${IMAGE_TAG:-demo}
+    build:
+      context: .
+      args:
+        MODULE: citas
+    environment:
+      SERVER_PORT: '8082'
+      JAVA_TOOL_OPTIONS: -Xms64m -Xmx192m
+      EUREKA_URL: http://discovery:8761/eureka/
+      DB_URL: r2dbc:postgresql://postgres:5432/citas
+      DB_USER: citas
+      DB_PASSWORD: ${CITAS_DB_PASSWORD:?Falta password de citas}
+      RABBIT_HOST: rabbitmq
+      RABBIT_USER: ${RABBIT_USER:?Falta RABBIT_USER}
+      RABBIT_PASSWORD: ${RABBIT_PASSWORD:?Falta RABBIT_PASSWORD}
+    depends_on:
+      discovery:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [hospital]
+  atenciones:
+    image: hospital-atenciones:${IMAGE_TAG:-demo}
+    build:
+      context: .
+      args:
+        MODULE: atenciones
+    environment:
+      SERVER_PORT: '8083'
+      JAVA_TOOL_OPTIONS: -Xms64m -Xmx192m
+      EUREKA_URL: http://discovery:8761/eureka/
+      DB_URL: r2dbc:postgresql://postgres:5432/atenciones
+      DB_USER: atenciones
+      DB_PASSWORD: ${ATENCIONES_DB_PASSWORD:?Falta password de atenciones}
+    depends_on:
+      discovery:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [hospital]
+  pagos:
+    image: hospital-pagos:${IMAGE_TAG:-demo}
+    build:
+      context: .
+      args:
+        MODULE: pagos
+    environment:
+      SERVER_PORT: '8084'
+      JAVA_TOOL_OPTIONS: -Xms64m -Xmx192m
+      EUREKA_URL: http://discovery:8761/eureka/
+      DB_URL: r2dbc:postgresql://postgres:5432/pagos
+      DB_USER: pagos
+      DB_PASSWORD: ${PAGOS_DB_PASSWORD:?Falta password de pagos}
+    depends_on:
+      discovery:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [hospital]
+  notificaciones:
+    image: hospital-notificaciones:${IMAGE_TAG:-demo}
+    build:
+      context: .
+      args:
+        MODULE: notificaciones
+    environment:
+      SERVER_PORT: '8085'
+      JAVA_TOOL_OPTIONS: -Xms64m -Xmx192m
+      EUREKA_URL: http://discovery:8761/eureka/
+      DB_URL: r2dbc:postgresql://postgres:5432/notificaciones
+      DB_USER: notificaciones
+      DB_PASSWORD: ${NOTIFICACIONES_DB_PASSWORD:?Falta password de notificaciones}
+      RABBIT_HOST: rabbitmq
+      RABBIT_USER: ${RABBIT_USER:?Falta RABBIT_USER}
+      RABBIT_PASSWORD: ${RABBIT_PASSWORD:?Falta RABBIT_PASSWORD}
+    depends_on:
+      discovery:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [hospital]
+  auditoria:
+    image: hospital-auditoria:${IMAGE_TAG:-demo}
+    build:
+      context: .
+      args:
+        MODULE: auditoria
+    environment:
+      SERVER_PORT: '8086'
+      JAVA_TOOL_OPTIONS: -Xms64m -Xmx192m
+      EUREKA_URL: http://discovery:8761/eureka/
+      DB_URL: r2dbc:postgresql://postgres:5432/auditoria
+      DB_USER: auditoria
+      DB_PASSWORD: ${AUDITORIA_DB_PASSWORD:?Falta password de auditoria}
+      RABBIT_HOST: rabbitmq
+      RABBIT_USER: ${RABBIT_USER:?Falta RABBIT_USER}
+      RABBIT_PASSWORD: ${RABBIT_PASSWORD:?Falta RABBIT_PASSWORD}
+    depends_on:
+      discovery:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [hospital]
+volumes:
+  sql_data:
+  rabbit_data:
+networks:
+  hospital:
+    name: hospital

@@ -1,0 +1,12 @@
+**/target/
+.env
+*.env
+!.env.example
+.idea/
+.vscode/
+*.iml
+*.log
+approved-image/
+pacientes-image.tar
+health.json
+patient.json

@@ -1,0 +1,31 @@
+server:
+  port: ${SERVER_PORT:8081}
+spring:
+  application:
+    name: pacientes
+  r2dbc:
+    url: ${DB_URL:r2dbc:postgresql://localhost:5432/pacientes}
+    username: ${DB_USER:pacientes}
+    password: ${DB_PASSWORD}
+  sql:
+    init:
+      mode: always
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+eureka:
+  client:
+    registry-fetch-interval-seconds: 5
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15
