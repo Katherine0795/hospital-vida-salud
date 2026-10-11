@@ -1,15 +1,19 @@
 name: Hospital CD Pacientes
+
 on:
   workflow_run:
     workflows: [Hospital CI]
     types: [completed]
     branches: [main]
+
 permissions:
   contents: read
   actions: read
+
 concurrency:
   group: hospital-demo-pacientes
   cancel-in-progress: false
+
 jobs:
   deploy:
     if: >-
@@ -17,31 +21,40 @@ jobs:
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch == 'main' &&
       github.event.workflow_run.head_repository.full_name == github.repository
-    runs-on: [self-hosted, Linux, X64, hospital-demo]
+    runs-on: [self-hosted, Windows, X64, hospital-demo]
+    timeout-minutes: 15
     environment: hospital-demo
     env:
       IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
       DEMO_GATEWAY_URL: ${{ vars.DEMO_GATEWAY_URL }}
       DEMO_PATIENT_ID: ${{ vars.DEMO_PATIENT_ID }}
+
     steps:
-      - name: Evitar desplegar un commit anterior al actual main
+      - name: Verificar que el commit sigue siendo el actual de main
         id: current
         uses: actions/github-script@v7
         with:
           script: |
             const { data } = await github.rest.repos.getBranch({
-              owner: context.repo.owner, repo: context.repo.repo, branch: 'main'
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: 'main'
             });
-            const current = data.commit.sha === context.payload.workflow_run.head_sha;
+            const current =
+              data.commit.sha === context.payload.workflow_run.head_sha;
             core.setOutput('current', String(current));
-            if (!current) core.info('Se omite este despliegue porque main ya tiene otro commit.');
-      - name: Descargar exactamente el commit aprobado
+            if (!current) {
+              core.info('Se omite el despliegue porque main tiene otro commit.');
+            }
+
+      - name: Descargar el commit aprobado
         if: steps.current.outputs.current == 'true'
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
-      - name: Descargar imagen de esa ejecucion CI
+
+      - name: Descargar la imagen aprobada por CI
         if: steps.current.outputs.current == 'true'
         uses: actions/download-artifact@v4
         with:
@@ -49,7 +62,103 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
           path: approved-image
+
       - name: Actualizar pacientes y verificar endpoint
         if: steps.current.outputs.current == 'true'
-        shell: bash
-        run: bash deploy/deploy-pacientes.sh
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          if ($env:IMAGE_TAG -notmatch '^[0-9a-f]{40}$') {
+            throw "SHA invalido"
+          }
+          if ([string]::IsNullOrWhiteSpace($env:DEMO_GATEWAY_URL)) {
+            throw "Falta DEMO_GATEWAY_URL"
+          }
+          if ($env:DEMO_PATIENT_ID -notmatch '^[0-9a-fA-F-]{36}$') {
+            throw "DEMO_PATIENT_ID ausente o invalido"
+          }
+          if (!(Test-Path "C:\hospital-demo\.env")) {
+            throw "Falta C:\hospital-demo\.env"
+          }
+
+          docker network inspect hospital | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            throw "No existe la red hospital"
+          }
+
+          docker load -i approved-image/pacientes-image.tar
+          if ($LASTEXITCODE -ne 0) {
+            throw "No se pudo cargar la imagen aprobada"
+          }
+
+          docker compose --env-file C:\hospital-demo\.env -f compose.yml up -d --no-deps pacientes
+          if ($LASTEXITCODE -ne 0) {
+            throw "Fallo el despliegue de pacientes"
+          }
+
+          $containerId = docker compose --env-file C:\hospital-demo\.env -f compose.yml ps -q pacientes
+          if ($LASTEXITCODE -ne 0 -or !$containerId) {
+            throw "No se encontro el contenedor de pacientes"
+          }
+          $containerId = $containerId.Trim()
+
+          $image = docker inspect --format '{{.Config.Image}}' $containerId
+          if ($LASTEXITCODE -ne 0) {
+            throw "No se pudo verificar la imagen instalada"
+          }
+          if ($image.Trim() -ne "hospital-pacientes:$env:IMAGE_TAG") {
+            throw "La imagen no corresponde al commit aprobado"
+          }
+          Write-Output "Imagen verificada: $image"
+
+          docker pull curlimages/curl:8.12.1
+          if ($LASTEXITCODE -ne 0) {
+            throw "No se pudo preparar la comprobacion de salud"
+          }
+
+          $healthy = $false
+          for ($i = 0; $i -lt 36; $i++) {
+            $ErrorActionPreference = "Continue"
+            $healthText = docker run --rm --network hospital curlimages/curl:8.12.1 --fail --silent --show-error --max-time 5 http://pacientes:8081/actuator/health
+            $probeExit = $LASTEXITCODE
+            $ErrorActionPreference = "Stop"
+
+            if ($probeExit -eq 0) {
+              try {
+                $health = ($healthText -join "`n") | ConvertFrom-Json
+                if ($health.status -eq "UP") {
+                  $healthy = $true
+                  Write-Output "Salud de pacientes verificada: UP"
+                  break
+                }
+              } catch {}
+            }
+            Start-Sleep -Seconds 5
+          }
+          if (!$healthy) {
+            throw "Pacientes no alcanzo estado UP"
+          }
+
+          $verified = $false
+          $url = $env:DEMO_GATEWAY_URL.TrimEnd("/") + "/api/pacientes/" + $env:DEMO_PATIENT_ID
+
+          for ($i = 0; $i -lt 36; $i++) {
+            try {
+              $response = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5
+              $patient = $response.Content | ConvertFrom-Json
+
+              if ($response.StatusCode -eq 200 -and $patient.id -eq $env:DEMO_PATIENT_ID) {
+                Write-Output "Endpoint verificado por Gateway: HTTP 200"
+                Write-Output "Paciente verificado: $($patient.id)"
+                $verified = $true
+                break
+              }
+            } catch {}
+            Start-Sleep -Seconds 5
+          }
+          if (!$verified) {
+            throw "Fallo la comprobacion del endpoint por Gateway"
+          }
+
+          Write-Output "Despliegue verificado para commit $env:IMAGE_TAG"
