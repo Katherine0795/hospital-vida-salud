@@ -26,6 +26,10 @@ jobs:
         run: python3 scripts/create_env.py
       - name: Levantar arquitectura real
         run: docker compose up -d --build
+      - name: Esperar estabilizacion del registro de servicios
+        run: |
+          sleep 60
+          docker compose ps
       - name: Verificar Gateway, Eureka, SQL y RabbitMQ
         run: python3 scripts/smoke.py --docker-checks
       - name: Guardar imagen probada de pacientes para CD
