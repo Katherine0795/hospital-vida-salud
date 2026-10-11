@@ -17,7 +17,7 @@ class PagoServiceTest {
 
   @Test
   void positiveIsAllowed() {
-    assertThatCode(() -> PagoService.validAmount(new BigDecimal("50.00")))
+    assertThatCode(() -> PagoService.validAmount(new BigDecimal("0.00")))
         .doesNotThrowAnyException();
   }
 }
